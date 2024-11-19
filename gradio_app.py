@@ -10,6 +10,8 @@ from draggan import utils
 from draggan.draggan import drag_gan
 from draggan import draggan as draggan
 
+import face_alignment
+
 device = 'cuda'
 
 
@@ -98,6 +100,120 @@ def on_drag(model, points, max_iters, state, size, mask, lr_box):
         step += 1
         yield image, state, step
 
+
+
+#on_smile
+def on_smile(image, points, size):
+    # face_alignment
+    fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.TWO_D, flip_input=False)
+    preds = fa.get_landmarks(image)
+    for pred in preds:
+        right_lip= pred[48]
+        right_eye_top = (pred[37] + pred[38]) / 2
+        right_eye_bottom = (pred[41] + pred[40]) / 2
+        right_lip_tar = (right_lip*4/5 + right_eye_bottom/5) 
+        points['handle'].append([right_lip[1], right_lip[0]])   
+        points['target'].append([right_lip_tar[1], right_lip_tar[0]])  
+
+        left_lip= pred[54]
+        left_eye_top = (pred[43] + pred[44]) / 2
+        left_eye_bottom = (pred[47] + pred[46]) / 2
+        left_lip_tar = (left_lip*4/5 + left_eye_bottom/5)
+        points['handle'].append([left_lip[1], left_lip[0]])   
+        points['target'].append([left_lip_tar[1], left_lip_tar[0]])   
+
+    image = add_points_to_image(image, points, size=SIZE_TO_CLICK_SIZE[size])
+    return image
+
+#on_thin
+def on_thin(image, points, size):
+    # face_alignment
+    fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.TWO_D, flip_input=False)
+    preds = fa.get_landmarks(image)
+    for pred in preds:
+        # 遍历每个关键点
+        right_face = pred[3]
+        right_lip= pred[31]
+        left_face = pred[13]
+        left_lip= pred[35]
+        right_face_tar = (right_face + right_lip) / 2
+        left_face_tar = (left_face + left_lip) / 2
+        points['handle'].append([right_face[1], right_face[0]])
+        points['target'].append([right_face_tar[1], right_face_tar[0]])
+        points['handle'].append([left_face[1], left_face[0]])
+        points['target'].append([left_face_tar[1], left_face_tar[0]])
+
+
+    image = add_points_to_image(image, points, size=SIZE_TO_CLICK_SIZE[size])
+    return image
+
+#on_big
+def on_big(image, points, size):
+    # face_alignment
+    fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.TWO_D, flip_input=False)
+    preds = fa.get_landmarks(image)
+    for pred in preds:
+
+        left_eye_1= pred[37]
+        left_eye_2= pred[38]
+        left_eye_3= pred[40]
+        left_eye_4= pred[41]
+        right_eye_1= pred[43]
+        right_eye_2= pred[44]
+        right_eye_3= pred[46]
+        right_eye_4= pred[47]
+        left_eye_1_tar= 2*left_eye_1 - left_eye_4
+        left_eye_2_tar= 2*left_eye_2 - left_eye_3
+        left_eye_3_tar= 2*left_eye_3 - left_eye_2
+        left_eye_4_tar= 2*left_eye_4 - left_eye_1
+
+        right_eye_1_tar= 2*right_eye_1 - right_eye_4
+        right_eye_2_tar= 2*right_eye_2 - right_eye_3
+        right_eye_3_tar= 2*right_eye_3 - right_eye_2
+        right_eye_4_tar= 2*right_eye_4 - right_eye_1
+
+        points['handle'].append([left_eye_1[1], left_eye_1[0]])
+        points['target'].append([left_eye_1_tar[1], left_eye_1_tar[0]])
+        points['handle'].append([left_eye_2[1], left_eye_2[0]])
+        points['target'].append([left_eye_2_tar[1], left_eye_2_tar[0]])
+        points['handle'].append([left_eye_3[1], left_eye_3[0]])
+        points['target'].append([left_eye_3_tar[1], left_eye_3_tar[0]])
+        points['handle'].append([left_eye_4[1], left_eye_4[0]])
+        points['target'].append([left_eye_4_tar[1], left_eye_4_tar[0]])
+        points['handle'].append([right_eye_1[1], right_eye_1[0]])
+        points['target'].append([right_eye_1_tar[1], right_eye_1_tar[0]])
+        points['handle'].append([right_eye_2[1], right_eye_2[0]])
+        points['target'].append([right_eye_2_tar[1], right_eye_2_tar[0]])
+        points['handle'].append([right_eye_3[1], right_eye_3[0]])
+        points['target'].append([right_eye_3_tar[1], right_eye_3_tar[0]])
+        points['handle'].append([right_eye_4[1], right_eye_4[0]])
+        points['target'].append([right_eye_4_tar[1], right_eye_4_tar[0]])
+
+        
+
+
+    image = add_points_to_image(image, points, size=SIZE_TO_CLICK_SIZE[size])
+    return image
+
+#on_close
+def on_close(image, points, size):
+    # face_alignment
+    fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.TWO_D, flip_input=False)
+    preds = fa.get_landmarks(image)
+    for pred in preds:
+        # 遍历每个关键点
+        right_eye_top = (pred[37] + pred[38]) / 2
+        right_eye_bottom = (pred[41] + pred[40]) / 2
+        points['handle'].append([right_eye_top[1], right_eye_top[0]])   
+        points['target'].append([right_eye_bottom[1], right_eye_bottom[0]])  
+
+        left_eye_top = (pred[43] + pred[44]) / 2
+        left_eye_bottom = (pred[47] + pred[46]) / 2
+        points['handle'].append([left_eye_top[1], left_eye_top[0]])   
+        points['target'].append([left_eye_bottom[1], left_eye_bottom[0]])   
+
+    image = add_points_to_image(image, points, size=SIZE_TO_CLICK_SIZE[size])
+    return image
 
 def on_reset(points, image, state):
     return {'target': [], 'handle': []}, state['img'], False
@@ -276,7 +392,12 @@ def main():
                             undo_btn = gr.Button('Undo Last')
                     with gr.Row():
                         btn = gr.Button('Drag it', variant='primary')
-
+                with gr.Accordion("一键修改"):
+                    btn_smile = gr.Button('微笑')
+                    btn_thin = gr.Button('瘦脸')
+                    btn_big = gr.Button('大眼')
+                    btn_close = gr.Button('闭眼')
+                
                 with gr.Accordion('Save', visible=False) as save_panel:
                     files = gr.Files(value=[])
 
@@ -293,6 +414,26 @@ def main():
         image.upload(on_image_change, [model, size, image], [image, mask, state, points, target_point])
         mask.upload(on_mask_change, [mask], [image])
         btn.click(on_drag, inputs=[model, points, max_iters, state, size, mask, lr_box], outputs=[image, state, progress]).then(
+            on_show_save, outputs=save_panel).then(
+            on_save_files, inputs=[image, state], outputs=[files]
+        )
+        btn_smile.click(on_smile, inputs=[image, points, size], outputs=[image]).then(
+            on_drag, inputs=[model, points, max_iters, state, size, mask, lr_box], outputs=[image, state, progress]).then(
+            on_show_save, outputs=save_panel).then(
+            on_save_files, inputs=[image, state], outputs=[files]
+        )
+        btn_thin.click(on_thin, inputs=[image, points, size], outputs=[image]).then(
+            on_drag, inputs=[model, points, max_iters, state, size, mask, lr_box], outputs=[image, state, progress]).then(
+            on_show_save, outputs=save_panel).then(
+            on_save_files, inputs=[image, state], outputs=[files]
+        )
+        btn_big.click(on_big, inputs=[image, points, size], outputs=[image]).then(
+            on_drag, inputs=[model, points, max_iters, state, size, mask, lr_box], outputs=[image, state, progress]).then(
+            on_show_save, outputs=save_panel).then(
+            on_save_files, inputs=[image, state], outputs=[files]
+        )
+        btn_close.click(on_close, inputs=[image, points, size], outputs=[image]).then(
+            on_drag, inputs=[model, points, max_iters, state, size, mask, lr_box], outputs=[image, state, progress]).then(
             on_show_save, outputs=save_panel).then(
             on_save_files, inputs=[image, state], outputs=[files]
         )
